@@ -1,9 +1,9 @@
 ---
-name: halo-shape-animation
+name: halo-animations
 description: Create looping outline animations from geometric shapes or supplied SVGs using staggered copies, shape-specific tilt and rotation, pronounced easing, and a subtle halo. Deliver a live adjustable preview and exported video. Use for contour motion graphics, not general interface transitions.
 ---
 
-# Halo shape animation
+# Halo animations
 
 Animate one outlined subject whose delayed copies separate, turn, and reunite into a seamless loop. Keep the subject recognizable and the halo restrained. “Steppers” means smoothly delayed copies, not discrete frame stepping.
 
