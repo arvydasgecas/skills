@@ -55,7 +55,7 @@ Construct built-in shapes as vector geometry. For supplied SVGs, preserve open a
 
 Resolve primitives, element and group transforms, nested coordinate systems, and locally referenced symbols into the intended visible geometry. Exclude unused definitions. Replace source paints with the uniform animation stroke.
 
-Center the transformed geometry on its bounds and normalize by its maximum radial extent. Use the same extent convention for every shape, including rounded squares. Sampling can estimate fit; render the original curves. When using browser matrices, include nested viewport transforms, for example with `root.getScreenCTM().inverse().multiply(element.getScreenCTM())`.
+Choose one fixed pivot before normalization. Built-in circles and regular polygons rotate about their geometric center. For an equilateral triangle, use the centroid (the mean of its three vertices), not the bounding-box center. For supplied artwork with verified rotational symmetry, use the center of that symmetry across the entire artwork; otherwise use the center of its transformed bounds and excursion-and-return motion. Translate this pivot to the origin and normalize by the maximum radial distance from it. Keep the pivot fixed throughout playback; do not recenter each frame. Use the same extent convention for every shape, including rounded squares. Sampling can estimate fit; render the original curves. When using browser matrices, include nested viewport transforms, for example with `root.getScreenCTM().inverse().multiply(element.getScreenCTM())`.
 
 Inspect the static outline before animating. Convert unsupported features explicitly:
 
@@ -117,7 +117,7 @@ By(v) = 3*(1-v)*v^2 + v^3
 
 Use a bounded binary search of 32 iterations and return exact 0 and 1 at the endpoints. Do not substitute elapsed time directly for the Bézier parameter. Apply easing to each copy's delayed local time; share the resulting progress between tilt and rotation.
 
-For a verified symmetry increment, use `angle = A*p`; otherwise use `angle = A*pulse` so the excursion and return form one movement. Do not add a separate fast reverse turn to close the loop. Only for verified symmetric shapes, canonicalize the final angle to zero at `u = 1`. Never snap an asymmetric outline.
+Choose the rotation mode from the current rotation value and the entire artwork's symmetry about its fixed pivot. Use `angle = A*p` only when rotating by `A` returns the artwork to the same outline; otherwise use `angle = A*pulse` so the excursion and return form one movement. Recompute this choice whenever rotation or geometry changes. For a plain equilateral triangle, multiples of 120° turn forward; a value such as 80° swings out and back. Apply the same rule using 60° for a regular hexagon and 90° for a symmetric rounded square; inner details can invalidate those symmetries. Allow only numerical rounding tolerance when checking multiples, not visibly different angles. Do not silently round the requested angle to a symmetry increment. Do not add a separate fast reverse turn to close the loop. Canonicalize the final angle to zero at `u = 1` only when the selected angle actually preserves the artwork. Never snap an incompatible angle to close the loop.
 
 The default triangle retains at least 78% of its height, the hexagon and rounded square 72%, and detailed outlines 84%. Leave at least 0.35 seconds aligned at the end of the canonical timeline. When comparing easing, keep geometry, copies, color, and glow identical so timing is the only variable.
 
@@ -138,7 +138,7 @@ Clear the canvas each frame. Draw oldest copies first with additive composition.
 
 Use one serializable configuration, including custom vector geometry, for both outputs. Rendering a saved scene must not depend on the original SVG's file location. Preserve generated source and settings when exact repeatability matters; instructions alone do not guarantee pixel-identical results across new implementations.
 
-Provide play/pause, scrubbing, reset, shape selection or SVG import, copy count, stagger, easing, rotation, flattening, stroke width, colors, halo strength and radius, and duration. Easing options apply to the polygon/custom recipe; retain the circle's original timing. Keep controls outside the exported composition.
+Provide play/pause, scrubbing, reset, built-in shape selection and SVG file import, copy count, stagger, easing, rotation, flattening, stroke width, colors, halo strength and radius, and duration. Include both shape selection and SVG import by default, even when the initial request names a built-in shape; omit either only if the user explicitly narrows the preview scope. Import must load and animate real geometry using the outline preparation rules, not be a placeholder control. Easing options apply to the polygon/custom recipe; retain the circle's original timing. Keep controls outside the exported composition.
 
 Selecting a shape loads its tuned motion settings while retaining palette and output settings. Reset restores the initial scene and imported geometry. Changing controls does not retroactively update an existing video; save settings and export again.
 
@@ -155,10 +155,11 @@ Do not append a duplicate terminal frame. Encode a genuine MP4, not another form
 
 Check observable behavior before delivery:
 
-- The silhouette, inner contours, and separate pieces are preserved.
+- The silhouette, inner contours, and separate pieces are preserved. A triangle rotated 120° about its chosen pivot matches its starting outline without translation.
 - The busiest crossings remain readable; lines stay smooth and constant-width, with no clipped halo.
 - The lead-in, peak speed, and settling feel intentional at normal playback speed; the loop has no jump, flash, or unnecessary reverse spin.
-- Scrubbing to the same time reproduces the same frame. Controls work and reset restores the initial scene.
+- Scrubbing to the same time reproduces the same frame. Controls work and reset restores the initial scene. Test both a symmetry-compatible angle and an incompatible angle (for example, triangle 120° and 80°); both loops close without snapping.
+- SVG import loads a sample with multiple contours, preserves them through playback and saved configuration, and uses the imported geometry in export. Report any unsupported features rather than silently dropping them.
 - The exported video decodes and matches the chosen preview dimensions, duration, frame rate, palette, and motion. Inspect decoded frames as well as the preview.
 
 For refinement requests, offer a synchronized comparison when useful. Deliver the live preview, playable video, and editable source with a brief statement of settings and any incomplete checks. Report only validation actually performed.
